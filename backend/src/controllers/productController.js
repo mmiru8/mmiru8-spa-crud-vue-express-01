@@ -43,7 +43,25 @@ const products = [
 function getProducts(req, res) {
   res.json(products);
 }
+function createProduct(req, res) {
+  const { name, price, stock } = req.body;
 
+  if (!name || !price || stock === undefined) {
+    return res.status(400).json({
+      message: "Date produs incomplete"
+    });
+  }
+
+  res.status(201).json({
+    message: "Produs validat corect",
+    product: {
+      name,
+      price,
+      stock
+    }
+  });
+}
 module.exports = {
-  getProducts
+  getProducts,
+  createProduct
 };

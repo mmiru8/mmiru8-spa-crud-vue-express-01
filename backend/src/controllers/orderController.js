@@ -20,7 +20,25 @@ const orders = [
 function getOrders(req, res) {
   res.json(orders);
 }
+function createOrder(req, res) {
+  const { customerName, productId, quantity } = req.body;
 
+  if (!customerName || !productId || !quantity) {
+    return res.status(400).json({
+      message: "Date comanda incomplete"
+    });
+  }
+
+  res.status(201).json({
+    message: "Comanda validata corect",
+    order: {
+      customerName,
+      productId,
+      quantity
+    }
+  });
+}
 module.exports = {
-  getOrders
+  getOrders,
+  createOrder
 };
