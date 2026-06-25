@@ -1,5 +1,21 @@
-<script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
+<script setup>
+import { RouterLink, RouterView } from "vue-router";
+import { ref, onMounted } from "vue";
+import { auth } from "./services/firebase";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+
+const currentUser = ref();
+
+onMounted(() => {
+  onAuthStateChanged(auth, (user) => {
+    currentUser.value = user;
+  });
+});
+
+async function logout() {
+  await signOut(auth);
+  alert("Te-ai deconectat.");
+}
 </script>
 
 <template>
@@ -10,6 +26,18 @@ import { RouterLink, RouterView } from 'vue-router'
       <nav class="nav">
         <RouterLink to="/">Produse</RouterLink>
         <RouterLink to="/orders">Comenzi</RouterLink>
+        <RouterLink to="/login">Login</RouterLink>
+        <RouterLink to="/register">Register</RouterLink>
+        <span v-if="currentUser">
+  {{ currentUser.email }}
+</span>
+
+<button
+  v-if="currentUser"
+  @click="logout"
+>
+  Logout
+</button>
       </nav>
     </header>
 
@@ -36,6 +64,7 @@ import { RouterLink, RouterView } from 'vue-router'
 .nav {
   display: flex;
   gap: 15px;
+  flex-wrap: wrap;
 }
 
 .nav a {
