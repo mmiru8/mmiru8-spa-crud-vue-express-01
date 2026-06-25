@@ -12,6 +12,7 @@ import { db, auth } from "../services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
 const products = ref([]);
+const search = ref("");
 
 const newName = ref("");
 const newPrice = ref("");
@@ -47,6 +48,13 @@ async function loadProducts() {
   }));
 }
 
+function filteredProducts() {
+  return products.value.filter(product =>
+    product.name.toLowerCase().includes(
+      search.value.toLowerCase()
+    )
+  );
+}
 async function addProduct() {
   if (!newName.value || !newPrice.value || !newStock.value) {
     alert("Completeaza toate campurile!");
@@ -67,6 +75,10 @@ async function addProduct() {
 }
 
 async function deleteProduct(id) {
+  if (!confirm("Sigur doresti sa stergi produsul?")) {
+    return;
+  }
+
   await deleteDoc(
     doc(db, "products", id)
   );
@@ -151,7 +163,12 @@ onMounted(() => {
 <template>
   <div>
     <h1>Produse Unghii</h1>
+<input
+  v-model="search"
+  placeholder="Cauta produs..."
+/>
 
+<br /><br />
     <p v-if="currentUser">
       Utilizator: {{ currentUser.email }}
     </p>
@@ -199,11 +216,16 @@ onMounted(() => {
       </button>
     </div>
 
-    <div v-for="product in products" :key="product.id">
-      <h3>{{ product.name }}</h3>
+<div
+  v-for="product in filteredProducts()"
+  :key="product.id"
+  class="product-card"
+>
+  <h3 class="title">
+    {{ product.name }}
+  </h3>
 
-      <p>Pret: {{ product.price }} lei</p>
-
+<p><strong>Pret:</strong> {{ product.price }} lei</p>
       <p v-if="isAdmin()">
         Stoc: {{ product.stock }}
       </p>
@@ -236,4 +258,35 @@ onMounted(() => {
       <hr />
     </div>
   </div>
-</template>7
+</template>
+<style scoped>
+.title {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.product-card {
+  border: 1px solid #ccc;
+  padding: 12px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+}
+
+input,
+select {
+  padding: 8px;
+  margin: 5px 0;
+  width: 250px;
+}
+
+button {
+  margin: 3px;
+  cursor: pointer;
+}
+button {
+  padding: 6px 12px;
+  margin-top: 8px;
+  cursor: pointer;
+  border-radius: 5px;
+}
+</style>

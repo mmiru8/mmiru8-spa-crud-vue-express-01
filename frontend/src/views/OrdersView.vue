@@ -7,10 +7,18 @@ import {
   updateDoc,
   doc
 } from "firebase/firestore";import { db } from "../services/firebase";
+import { auth } from "../services/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 const orders = ref([]);
 const products = ref([]);
+const currentUser = ref(null);
+const adminEmail = "admin@test.com";
 
+function isAdmin() {
+  return currentUser.value &&
+         currentUser.value.email === adminEmail;
+}
 const customerName = ref("");
 const selectedProductId = ref("");
 const quantity = ref("");
@@ -77,6 +85,10 @@ async function markAsSent(id) {
 onMounted(() => {
   loadOrders();
   loadProducts();
+
+  onAuthStateChanged(auth, (user) => {
+    currentUser.value = user;
+  });
 });
 </script>
 
@@ -84,13 +96,13 @@ onMounted(() => {
   <div>
     <h1>Comenzi</h1>
 
-    <h3>Adauga comanda</h3>
-
+<div v-if="isAdmin()">
+  <h3>Adauga comanda</h3>
     <input
       v-model="customerName"
       placeholder="Nume client"
     />
-
+</div>
     <select v-model="selectedProductId">
       <option value="">
         Alege produs
@@ -125,12 +137,13 @@ onMounted(() => {
       <p>Produs: {{ order.productName }}</p>
       <p>Cantitate: {{ order.quantity }}</p>
 
-      <button
-  v-if="order.status === 'Noua'"
+<button
+  v-if="isAdmin() && order.status === 'Noua'"
   @click="markAsSent(order.id)"
 >
   Marcheaza ca expediata
 </button>
+
       <hr />
     </div>
   </div>
