@@ -17,11 +17,13 @@ const search = ref("");
 const newName = ref("");
 const newPrice = ref("");
 const newStock = ref("");
+const newCategory = ref("");
 
 const editId = ref(null);
 const editName = ref("");
 const editPrice = ref("");
 const editStock = ref("");
+const editCategory = ref("");
 
 const currentUser = ref(null);
 const adminEmail = "admin@test.com";
@@ -61,15 +63,17 @@ async function addProduct() {
     return;
   }
 
-  await addDoc(collection(db, "products"), {
-    name: newName.value,
-    price: Number(newPrice.value),
-    stock: Number(newStock.value)
-  });
+await addDoc(collection(db, "products"), {
+  name: newName.value,
+  price: Number(newPrice.value),
+  category: newCategory.value,
+  stock: Number(newStock.value)
+});
 
   newName.value = "";
   newPrice.value = "";
   newStock.value = "";
+  newCategory.value = "";
 
   loadProducts();
 }
@@ -91,6 +95,7 @@ function editProduct(product) {
   editName.value = product.name;
   editPrice.value = product.price;
   editStock.value = product.stock;
+  editCategory.value = product.category;
 }
 
 async function updateProduct() {
@@ -99,13 +104,15 @@ async function updateProduct() {
     {
       name: editName.value,
       price: Number(editPrice.value),
-      stock: Number(editStock.value)
+      stock: Number(editStock.value),
+      category: editCategory.value,
     }
   );
 
   editId.value = null;
   editName.value = "";
   editPrice.value = "";
+  editStock.value = "";
   editStock.value = "";
 
   loadProducts();
@@ -183,6 +190,7 @@ onMounted(() => {
       <input v-model="newName" placeholder="Nume produs" />
       <input v-model="newPrice" type="number" placeholder="Pret" />
       <input v-model="newStock" type="number" placeholder="Stoc" />
+      <input v-model="newCategory" placeholder="Categorie"/>
 
       <button @click="addProduct">
         Adauga
@@ -195,6 +203,7 @@ onMounted(() => {
       <input v-model="editName" placeholder="Nume produs" />
       <input v-model="editPrice" type="number" placeholder="Pret" />
       <input v-model="editStock" type="number" placeholder="Stoc" />
+      <input v-model="editCategory" placeholder="Categorie"/>
 
       <button @click="updateProduct">
         Salveaza modificarile
@@ -226,9 +235,14 @@ onMounted(() => {
   </h3>
 
 <p><strong>Pret:</strong> {{ product.price }} lei</p>
-      <p v-if="isAdmin()">
-        Stoc: {{ product.stock }}
-      </p>
+
+<p>
+  <strong>Categorie:</strong> {{ product.category }}
+</p>
+
+<p v-if="isAdmin()">
+  Stoc: {{ product.stock }}
+</p>
 
 <button
   v-if="currentUser && !isAdmin() && product.stock > 0"
@@ -288,5 +302,17 @@ button {
   margin-top: 8px;
   cursor: pointer;
   border-radius: 5px;
+}
+@media (max-width: 600px) {
+  input,
+  select,
+  button {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .product-card {
+    padding: 10px;
+  }
 }
 </style>

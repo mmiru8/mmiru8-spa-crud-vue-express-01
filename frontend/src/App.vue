@@ -1,19 +1,16 @@
 <script setup>
 import { RouterLink, RouterView } from "vue-router";
-import { ref, onMounted } from "vue";
-import { auth } from "./services/firebase";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { onMounted } from "vue";
+import { useAuthStore } from "./stores/authStore";
 
-const currentUser = ref();
+const authStore = useAuthStore();
 
 onMounted(() => {
-  onAuthStateChanged(auth, (user) => {
-    currentUser.value = user;
-  });
+  authStore.listenToAuthChanges();
 });
 
 async function logout() {
-  await signOut(auth);
+  await authStore.logout();
   alert("Te-ai deconectat.");
 }
 </script>
@@ -28,16 +25,17 @@ async function logout() {
         <RouterLink to="/orders">Comenzi</RouterLink>
         <RouterLink to="/login">Login</RouterLink>
         <RouterLink to="/register">Register</RouterLink>
-        <span v-if="currentUser">
-  {{ currentUser.email }}
-</span>
 
-<button
-  v-if="currentUser"
-  @click="logout"
->
-  Logout
-</button>
+        <span v-if="authStore.user">
+          {{ authStore.user.email }}
+        </span>
+
+        <button
+          v-if="authStore.user"
+          @click="logout"
+        >
+          Logout
+        </button>
       </nav>
     </header>
 
@@ -78,5 +76,25 @@ async function logout() {
 
 .main {
   margin-top: 20px;
+}
+@media (max-width: 600px) {
+  .app {
+    padding: 10px;
+  }
+
+  .header h1 {
+    font-size: 22px;
+  }
+
+  .nav {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .nav a,
+  .nav button,
+  .nav span {
+    width: 100%;
+  }
 }
 </style>
