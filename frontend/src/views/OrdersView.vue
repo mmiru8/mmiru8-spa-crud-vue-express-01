@@ -7,13 +7,13 @@ import {
   updateDoc,
   doc
 } from "firebase/firestore";
-import { db, auth } from "../services/firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import { db } from "../services/firebase";
+import { useAuthStore } from "../stores/authStore";
 
 const orders = ref([]);
 const products = ref([]);
 
-const currentUser = ref(null);
+const authStore = useAuthStore();
 const adminEmail = "admin@test.com";
 
 const customerName = ref("");
@@ -21,8 +21,8 @@ const selectedProductId = ref("");
 const quantity = ref("");
 
 function isAdmin() {
-  return currentUser.value &&
-         currentUser.value.email === adminEmail;
+  return authStore.user &&
+         authStore.user.email === adminEmail;
 }
 
 async function loadOrders() {
@@ -56,7 +56,8 @@ async function loadProducts() {
       id: doc.id,
       name: data.name,
       price: data.price,
-      stock: data.stock
+      stock: data.stock,
+      category: data.category
     };
   });
 }
@@ -105,16 +106,21 @@ async function markAsSent(id) {
 onMounted(() => {
   loadOrders();
   loadProducts();
-
-  onAuthStateChanged(auth, (user) => {
-    currentUser.value = user;
-  });
+  authStore.listenToAuthChanges();
 });
 </script>
 
 <template>
   <div>
     <h1>Comenzi</h1>
+
+    <p v-if="authStore.user">
+      Utilizator: {{ authStore.user.email }}
+    </p>
+
+    <p v-if="isAdmin()">
+      Cont administrator
+    </p>
 
     <div v-if="isAdmin()">
       <h3>Adauga comanda</h3>

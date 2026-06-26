@@ -8,11 +8,12 @@ import {
   doc,
   updateDoc
 } from "firebase/firestore";
-import { db, auth } from "../services/firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import { db } from "../services/firebase";
+import { useAuthStore } from "../stores/authStore";
 
 const products = ref([]);
 const search = ref("");
+const sortOption = ref("");
 
 const newName = ref("");
 const newPrice = ref("");
@@ -25,7 +26,7 @@ const editPrice = ref("");
 const editStock = ref("");
 const editCategory = ref("");
 
-const currentUser = ref(null);
+const authStore = useAuthStore();
 const adminEmail = "admin@test.com";
 
 const selectedProduct = ref(null);
@@ -35,8 +36,8 @@ const phone = ref("");
 const quantity = ref(1);
 
 function isAdmin() {
-  return currentUser.value &&
-         currentUser.value.email === adminEmail;
+  return authStore.user &&
+         authStore.user.email === adminEmail;
 }
 
 async function loadProducts() {
@@ -44,31 +45,53 @@ async function loadProducts() {
     collection(db, "products")
   );
 
-  products.value = querySnapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  }));
+  products.value = querySnapshot.docs.map(doc => {
+    const data = doc.data();
+
+    return {
+      id: doc.id,
+      name: data.name,
+      price: data.price,
+      stock: data.stock,
+      category: data.category
+    };
+  });
 }
 
 function filteredProducts() {
-  return products.value.filter(product =>
+  let result = products.value.filter(product =>
     product.name.toLowerCase().includes(
       search.value.toLowerCase()
     )
   );
+
+  if (sortOption.value === "price-asc") {
+    result.sort((a, b) => a.price - b.price);
+  }
+
+  if (sortOption.value === "price-desc") {
+    result.sort((a, b) => b.price - a.price);
+  }
+
+  if (sortOption.value === "name-asc") {
+    result.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  return result;
 }
+
 async function addProduct() {
-  if (!newName.value || !newPrice.value || !newStock.value) {
+  if (!newName.value || !newPrice.value || !newStock.value || !newCategory.value) {
     alert("Completeaza toate campurile!");
     return;
   }
 
-await addDoc(collection(db, "products"), {
-  name: newName.value,
-  price: Number(newPrice.value),
-  category: newCategory.value,
-  stock: Number(newStock.value)
-});
+  await addDoc(collection(db, "products"), {
+    name: newName.value,
+    price: Number(newPrice.value),
+    category: newCategory.value,
+    stock: Number(newStock.value)
+  });
 
   newName.value = "";
   newPrice.value = "";
@@ -105,7 +128,7 @@ async function updateProduct() {
       name: editName.value,
       price: Number(editPrice.value),
       stock: Number(editStock.value),
-      category: editCategory.value,
+      category: editCategory.value
     }
   );
 
@@ -113,7 +136,7 @@ async function updateProduct() {
   editName.value = "";
   editPrice.value = "";
   editStock.value = "";
-  editStock.value = "";
+  editCategory.value = "";
 
   loadProducts();
 }
@@ -134,7 +157,7 @@ async function sendOrder() {
   }
 
   await addDoc(collection(db, "orders"), {
-    customerEmail: currentUser.value.email,
+    customerEmail: authStore.user.email,
     customerName: customerName.value,
     address: address.value,
     phone: phone.value,
@@ -143,12 +166,14 @@ async function sendOrder() {
     quantity: Number(quantity.value),
     status: "Noua"
   });
-await updateDoc(
-  doc(db, "products", selectedProduct.value.id),
-  {
-    stock: Number(selectedProduct.value.stock) - Number(quantity.value)
-  }
-);
+
+  await updateDoc(
+    doc(db, "products", selectedProduct.value.id),
+    {
+      stock: Number(selectedProduct.value.stock) - Number(quantity.value)
+    }
+  );
+
   alert("Comanda a fost trimisa!");
 
   selectedProduct.value = null;
@@ -156,28 +181,34 @@ await updateDoc(
   address.value = "";
   phone.value = "";
   quantity.value = 1;
+
+  loadProducts();
 }
 
 onMounted(() => {
   loadProducts();
-
-  onAuthStateChanged(auth, (user) => {
-    currentUser.value = user;
-  });
+  authStore.listenToAuthChanges();
 });
 </script>
 
 <template>
   <div>
     <h1>Produse Unghii</h1>
-<input
-  v-model="search"
-  placeholder="Cauta produs..."
-/>
 
-<br /><br />
-    <p v-if="currentUser">
-      Utilizator: {{ currentUser.email }}
+    <input
+      v-model="search"
+      placeholder="Cauta produs..."
+    />
+
+    <select v-model="sortOption">
+      <option value="">Fara sortare</option>
+      <option value="price-asc">Pret crescator</option>
+      <option value="price-desc">Pret descrescator</option>
+      <option value="name-asc">Nume A-Z</option>
+    </select>
+
+    <p v-if="authStore.user">
+      Utilizator: {{ authStore.user.email }}
     </p>
 
     <p v-if="isAdmin()">
@@ -190,7 +221,7 @@ onMounted(() => {
       <input v-model="newName" placeholder="Nume produs" />
       <input v-model="newPrice" type="number" placeholder="Pret" />
       <input v-model="newStock" type="number" placeholder="Stoc" />
-      <input v-model="newCategory" placeholder="Categorie"/>
+      <input v-model="newCategory" placeholder="Categorie" />
 
       <button @click="addProduct">
         Adauga
@@ -203,14 +234,14 @@ onMounted(() => {
       <input v-model="editName" placeholder="Nume produs" />
       <input v-model="editPrice" type="number" placeholder="Pret" />
       <input v-model="editStock" type="number" placeholder="Stoc" />
-      <input v-model="editCategory" placeholder="Categorie"/>
+      <input v-model="editCategory" placeholder="Categorie" />
 
       <button @click="updateProduct">
         Salveaza modificarile
       </button>
     </div>
 
-    <div v-if="selectedProduct && currentUser && !isAdmin()">
+    <div v-if="selectedProduct && authStore.user && !isAdmin()">
       <h3>Formular comanda</h3>
 
       <p>Produs ales: {{ selectedProduct.name }}</p>
@@ -225,35 +256,35 @@ onMounted(() => {
       </button>
     </div>
 
-<div
-  v-for="product in filteredProducts()"
-  :key="product.id"
-  class="product-card"
->
-  <h3 class="title">
-    {{ product.name }}
-  </h3>
+    <div
+      v-for="product in filteredProducts()"
+      :key="product.id"
+      class="product-card"
+    >
+      <h3 class="title">
+        {{ product.name }}
+      </h3>
 
-<p><strong>Pret:</strong> {{ product.price }} lei</p>
+      <p><strong>Pret:</strong> {{ product.price }} lei</p>
 
-<p>
-  <strong>Categorie:</strong> {{ product.category }}
-</p>
+      <p>
+        <strong>Categorie:</strong> {{ product.category }}
+      </p>
 
-<p v-if="isAdmin()">
-  Stoc: {{ product.stock }}
-</p>
+      <p v-if="isAdmin()">
+        Stoc: {{ product.stock }}
+      </p>
 
-<button
-  v-if="currentUser && !isAdmin() && product.stock > 0"
-  @click="openOrderForm(product)"
->
-  Comanda
-</button>
+      <button
+        v-if="authStore.user && !isAdmin() && product.stock > 0"
+        @click="openOrderForm(product)"
+      >
+        Comanda
+      </button>
 
-<p v-if="currentUser && !isAdmin() && product.stock <= 0">
-  Stoc epuizat
-</p>
+      <p v-if="authStore.user && !isAdmin() && product.stock <= 0">
+        Stoc epuizat
+      </p>
 
       <button
         v-if="isAdmin()"
@@ -268,11 +299,10 @@ onMounted(() => {
       >
         Sterge
       </button>
-
-      <hr />
     </div>
   </div>
 </template>
+
 <style scoped>
 .title {
   margin-top: 0;
@@ -294,15 +324,12 @@ select {
 }
 
 button {
-  margin: 3px;
-  cursor: pointer;
-}
-button {
   padding: 6px 12px;
-  margin-top: 8px;
+  margin: 3px;
   cursor: pointer;
   border-radius: 5px;
 }
+
 @media (max-width: 600px) {
   input,
   select,
