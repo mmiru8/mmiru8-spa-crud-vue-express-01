@@ -37,27 +37,25 @@ async function register() {
 </script>
 
 <template>
-  <div>
-    <h1>Înregistrare</h1>
+  <div class="register-container">
+    <div class="register-card">
+      <h1>Înregistrare</h1>
 
-    <input
-      v-model="email"
-      type="email"
-      placeholder="Email"
-    />
+      <input
+        v-model="email"
+        type="email"
+        placeholder="Email"
+      />
 
-    <br /><br />
+      <input
+        v-model="password"
+        type="password"
+        placeholder="Parolă"
+      />
 
-    <input
-      v-model="password"
-      type="password"
-      placeholder="Parolă"
-    />
-
-    <br /><br />
-
-    <button @click="register">
-      Creează cont
-    </button>
+      <button @click="register">
+        Creează cont
+      </button>
+    </div>
   </div>
 </template>

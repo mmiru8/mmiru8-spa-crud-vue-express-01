@@ -2,7 +2,7 @@
 import { ref, onMounted } from "vue";
 import {
   collection,
-  getDocs,
+  onSnapshot,
   addDoc,
   deleteDoc,
   doc,
@@ -40,22 +40,29 @@ function isAdmin() {
          authStore.user.email === adminEmail;
 }
 
-async function loadProducts() {
-  const querySnapshot = await getDocs(
-    collection(db, "products")
+function loadProducts() {
+
+  onSnapshot(
+    collection(db, "products"),
+    (querySnapshot) => {
+
+      products.value = querySnapshot.docs.map(doc => {
+
+        const data = doc.data();
+
+        return {
+          id: doc.id,
+          name: data.name,
+          price: data.price,
+          stock: data.stock,
+          category: data.category
+        };
+
+      });
+
+    }
   );
 
-  products.value = querySnapshot.docs.map(doc => {
-    const data = doc.data();
-
-    return {
-      id: doc.id,
-      name: data.name,
-      price: data.price,
-      stock: data.stock,
-      category: data.category
-    };
-  });
 }
 
 function filteredProducts() {
@@ -98,7 +105,6 @@ async function addProduct() {
   newStock.value = "";
   newCategory.value = "";
 
-  loadProducts();
 }
 
 async function deleteProduct(id) {
@@ -110,7 +116,6 @@ async function deleteProduct(id) {
     doc(db, "products", id)
   );
 
-  loadProducts();
 }
 
 function editProduct(product) {
@@ -138,7 +143,6 @@ async function updateProduct() {
   editStock.value = "";
   editCategory.value = "";
 
-  loadProducts();
 }
 
 function openOrderForm(product) {
@@ -182,7 +186,6 @@ async function sendOrder() {
   phone.value = "";
   quantity.value = 1;
 
-  loadProducts();
 }
 
 onMounted(() => {
@@ -192,8 +195,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
-    <h1>Produse Unghii</h1>
+<div class="page">
+  
+  <h1>Produse Unghii</h1>
 
     <input
       v-model="search"
@@ -255,7 +259,9 @@ onMounted(() => {
         Trimite comanda
       </button>
     </div>
-
+      <p v-if="filteredProducts().length === 0">
+        Nu exista produse.
+      </p>
     <div
       v-for="product in filteredProducts()"
       :key="product.id"
@@ -302,44 +308,3 @@ onMounted(() => {
     </div>
   </div>
 </template>
-
-<style scoped>
-.title {
-  margin-top: 0;
-  margin-bottom: 10px;
-}
-
-.product-card {
-  border: 1px solid #ccc;
-  padding: 12px;
-  margin-bottom: 12px;
-  border-radius: 6px;
-}
-
-input,
-select {
-  padding: 8px;
-  margin: 5px 0;
-  width: 250px;
-}
-
-button {
-  padding: 6px 12px;
-  margin: 3px;
-  cursor: pointer;
-  border-radius: 5px;
-}
-
-@media (max-width: 600px) {
-  input,
-  select,
-  button {
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  .product-card {
-    padding: 10px;
-  }
-}
-</style>

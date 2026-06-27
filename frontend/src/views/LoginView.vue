@@ -32,27 +32,25 @@ async function login() {
 </script>
 
 <template>
-  <div>
-    <h1>Autentificare</h1>
+  <div class="login-container">
+    <div class="login-card">
+      <h1>Autentificare</h1>
 
-    <input
-      v-model="email"
-      type="email"
-      placeholder="Email"
-    />
+      <input
+        v-model="email"
+        type="email"
+        placeholder="Email"
+      />
 
-    <br /><br />
+      <input
+        v-model="password"
+        type="password"
+        placeholder="Parola"
+      />
 
-    <input
-      v-model="password"
-      type="password"
-      placeholder="Parola"
-    />
-
-    <br /><br />
-
-    <button @click="login">
-      Intra in cont
-    </button>
+      <button @click="login">
+        Intră în cont
+      </button>
+    </div>
   </div>
 </template>

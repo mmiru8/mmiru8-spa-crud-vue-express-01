@@ -2,7 +2,7 @@
 import { ref, onMounted } from "vue";
 import {
   collection,
-  getDocs,
+  onSnapshot,
   addDoc,
   updateDoc,
   doc
@@ -25,47 +25,53 @@ function isAdmin() {
          authStore.user.email === adminEmail;
 }
 
-async function loadOrders() {
-  const querySnapshot = await getDocs(
-    collection(db, "orders")
+function loadOrders() {
+  onSnapshot(
+    collection(db, "orders"),
+    (querySnapshot) => {
+      orders.value = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+
+        return {
+          id: doc.id,
+          customerName: data.customerName,
+          productId: data.productId,
+          productName: data.productName,
+          quantity: data.quantity,
+          status: data.status
+        };
+      });
+    }
   );
-
-  orders.value = querySnapshot.docs.map(doc => {
-    const data = doc.data();
-
-    return {
-      id: doc.id,
-      customerName: data.customerName,
-      productId: data.productId,
-      productName: data.productName,
-      quantity: data.quantity,
-      status: data.status
-    };
-  });
 }
 
-async function loadProducts() {
-  const querySnapshot = await getDocs(
-    collection(db, "products")
+function loadProducts() {
+  onSnapshot(
+    collection(db, "products"),
+    (querySnapshot) => {
+      products.value = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+
+        return {
+          id: doc.id,
+          name: data.name,
+          price: data.price,
+          stock: data.stock,
+          category: data.category
+        };
+      });
+    }
   );
-
-  products.value = querySnapshot.docs.map(doc => {
-    const data = doc.data();
-
-    return {
-      id: doc.id,
-      name: data.name,
-      price: data.price,
-      stock: data.stock,
-      category: data.category
-    };
-  });
 }
 
 async function addOrder() {
   if (!customerName.value || !selectedProductId.value || !quantity.value) {
     alert("Completeaza toate campurile!");
     return;
+  }
+  if (Number(quantity.value) <= 0) {
+  alert("Cantitatea trebuie sa fie mai mare decat 0!");
+  return;
   }
 
   const selectedProduct = products.value.find(product => {
@@ -88,8 +94,6 @@ async function addOrder() {
   customerName.value = "";
   selectedProductId.value = "";
   quantity.value = "";
-
-  loadOrders();
 }
 
 async function markAsSent(id) {
@@ -99,8 +103,6 @@ async function markAsSent(id) {
       status: "Expediata"
     }
   );
-
-  loadOrders();
 }
 
 onMounted(() => {
@@ -179,35 +181,3 @@ onMounted(() => {
     </div>
   </div>
 </template>
-
-<style scoped>
-.order-card {
-  border: 1px solid #ccc;
-  padding: 12px;
-  margin-bottom: 12px;
-  border-radius: 6px;
-}
-
-input,
-select {
-  padding: 8px;
-  margin: 5px 0;
-  width: 250px;
-}
-
-button {
-  padding: 6px 12px;
-  margin: 3px;
-  cursor: pointer;
-  border-radius: 5px;
-}
-
-@media (max-width: 600px) {
-  input,
-  select,
-  button {
-    width: 100%;
-    box-sizing: border-box;
-  }
-}
-</style>
