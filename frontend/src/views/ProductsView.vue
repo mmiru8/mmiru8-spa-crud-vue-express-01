@@ -88,6 +88,30 @@ function filteredProducts() {
   return result;
 }
 
+function totalProducts() {
+  return filteredProducts().length;
+}
+
+function totalStock() {
+  return products.value.reduce((total, product) => {
+    return total + Number(product.stock);
+  }, 0);
+}
+
+function averagePrice() {
+
+  if (products.value.length === 0) {
+    return 0;
+  }
+
+  const total = products.value.reduce((sum, product) => {
+    return sum + Number(product.price);
+  }, 0);
+
+  return (total / products.value.length).toFixed(2);
+
+}
+
 async function addProduct() {
   if (!newName.value || !newPrice.value || newStock.value === "" || !newCategory.value) {
     alert("Completeaza toate campurile!");
@@ -265,7 +289,17 @@ onMounted(() => {
       Cont administrator
     </p>
 
-    <div v-if="isAdmin()">
+   <p v-if="isAdmin()">
+  Total produse: {{ totalProducts() }}
+</p>
+
+<p v-if="isAdmin()">
+  Total stoc: {{ totalStock() }}
+</p>
+
+
+
+<div v-if="isAdmin()">
       <h3>Adauga produs</h3>
 
       <input v-model="newName" placeholder="Nume produs" />
