@@ -6,7 +6,8 @@ import {
   addDoc,
   deleteDoc,
   doc,
-  updateDoc
+  updateDoc,
+  serverTimestamp
 } from "firebase/firestore";
 import { db } from "../services/firebase";
 import { useAuthStore } from "../stores/authStore";
@@ -88,17 +89,29 @@ function filteredProducts() {
 }
 
 async function addProduct() {
-  if (!newName.value || !newPrice.value || !newStock.value || !newCategory.value) {
+  if (!newName.value || !newPrice.value || newStock.value === "" || !newCategory.value) {
     alert("Completeaza toate campurile!");
     return;
   }
 
-  await addDoc(collection(db, "products"), {
-    name: newName.value,
-    price: Number(newPrice.value),
-    category: newCategory.value,
-    stock: Number(newStock.value)
-  });
+  if (Number(newPrice.value) <= 0) {
+  alert("Pretul trebuie sa fie mai mare decat 0!");
+  return;
+}
+
+if (Number(newStock.value) < 0) {
+  alert("Stocul nu poate fi negativ!");
+  return;
+}
+
+await addDoc(collection(db, "products"), {
+  name: newName.value,
+  price: Number(newPrice.value),
+  category: newCategory.value,
+  stock: Number(newStock.value),
+  createdAt: serverTimestamp()
+});
+
 
   newName.value = "";
   newPrice.value = "";
@@ -127,6 +140,20 @@ function editProduct(product) {
 }
 
 async function updateProduct() {
+if (!editName.value || !editPrice.value || editStock.value === "" || !editCategory.value) {
+    alert("Completeaza toate campurile!");
+  return;
+}
+
+if (Number(editPrice.value) <= 0) {
+  alert("Pretul trebuie sa fie mai mare decat 0!");
+  return;
+}
+
+if (Number(editStock.value) < 0) {
+  alert("Stocul nu poate fi negativ!");
+  return;
+}
   await updateDoc(
     doc(db, "products", editId.value),
     {
@@ -144,32 +171,51 @@ async function updateProduct() {
   editCategory.value = "";
 
 }
-
+function cancelEdit() {
+  editId.value = null;
+  editName.value = "";
+  editPrice.value = "";
+  editStock.value = "";
+  editCategory.value = "";
+}
 function openOrderForm(product) {
   selectedProduct.value = product;
 }
 
 async function sendOrder() {
+  if (!authStore.user) {
+  alert("Trebuie sa fii autentificat pentru a trimite comanda!");
+  return;
+}
   if (!customerName.value || !address.value || !phone.value || !quantity.value) {
     alert("Completeaza toate campurile pentru comanda!");
     return;
   }
+  if (Number(quantity.value) <= 0) {
+  alert("Cantitatea trebuie sa fie mai mare decat 0!");
+  return;
+}
 
+if (phone.value.length < 10) {
+  alert("Numarul de telefon trebuie sa aiba minim 10 cifre!");
+  return;
+}
   if (Number(quantity.value) > Number(selectedProduct.value.stock)) {
     alert("Nu exista suficient stoc pentru acest produs!");
     return;
   }
 
-  await addDoc(collection(db, "orders"), {
-    customerEmail: authStore.user.email,
-    customerName: customerName.value,
-    address: address.value,
-    phone: phone.value,
-    productId: selectedProduct.value.id,
-    productName: selectedProduct.value.name,
-    quantity: Number(quantity.value),
-    status: "Noua"
-  });
+await addDoc(collection(db, "orders"), {
+  customerEmail: authStore.user.email,
+  customerName: customerName.value,
+  address: address.value,
+  phone: phone.value,
+  productId: selectedProduct.value.id,
+  productName: selectedProduct.value.name,
+  quantity: Number(quantity.value),
+  status: "Noua",
+  createdAt: serverTimestamp()
+});
 
   await updateDoc(
     doc(db, "products", selectedProduct.value.id),
@@ -232,19 +278,22 @@ onMounted(() => {
       </button>
     </div>
 
-    <div v-if="isAdmin() && editId">
-      <h3>Editeaza produs</h3>
+<div v-if="isAdmin() && editId">
+  <h3>Editeaza produs</h3>
 
-      <input v-model="editName" placeholder="Nume produs" />
-      <input v-model="editPrice" type="number" placeholder="Pret" />
-      <input v-model="editStock" type="number" placeholder="Stoc" />
-      <input v-model="editCategory" placeholder="Categorie" />
+  <input v-model="editName" placeholder="Nume produs" />
+  <input v-model="editPrice" type="number" placeholder="Pret" />
+  <input v-model="editStock" type="number" placeholder="Stoc" />
+  <input v-model="editCategory" placeholder="Categorie" />
 
-      <button @click="updateProduct">
-        Salveaza modificarile
-      </button>
-    </div>
+  <button @click="updateProduct">
+    Salveaza modificarile
+  </button>
 
+  <button @click="cancelEdit">
+    Anuleaza
+  </button>
+</div>
     <div v-if="selectedProduct && authStore.user && !isAdmin()">
       <h3>Formular comanda</h3>
 

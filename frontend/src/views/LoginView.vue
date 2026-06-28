@@ -1,33 +1,29 @@
 <script setup>
 import { ref } from "vue";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../services/firebase";
+import { useAuthStore } from "../stores/authStore";
 
 const email = ref("");
 const password = ref("");
 
-async function login() {
+const authStore = useAuthStore();
 
+async function login() {
   if (!email.value || !password.value) {
     alert("Completeaza emailul si parola!");
     return;
   }
 
-  try {
-    await signInWithEmailAndPassword(
-      auth,
-      email.value,
-      password.value
-    );
+  await authStore.login(email.value, password.value);
 
-    alert("Autentificare reusita!");
-
-    email.value = "";
-    password.value = "";
-
-  } catch (error) {
-    alert("Email sau parola incorecta!");
+  if (authStore.errorMessage) {
+    alert(authStore.errorMessage);
+    return;
   }
+
+  alert("Autentificare reusita!");
+
+  email.value = "";
+  password.value = "";
 }
 </script>
 

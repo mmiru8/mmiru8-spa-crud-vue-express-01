@@ -1,13 +1,13 @@
 <script setup>
 import { ref } from "vue";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../services/firebase";
+import { useAuthStore } from "../stores/authStore";
 
 const email = ref("");
 const password = ref("");
 
-async function register() {
+const authStore = useAuthStore();
 
+async function register() {
   if (!email.value || !password.value) {
     alert("Completeaza emailul si parola!");
     return;
@@ -18,21 +18,17 @@ async function register() {
     return;
   }
 
-  try {
-    await createUserWithEmailAndPassword(
-      auth,
-      email.value,
-      password.value
-    );
+  await authStore.register(email.value, password.value);
 
-    alert("Cont creat cu succes!");
-
-    email.value = "";
-    password.value = "";
-
-  } catch (error) {
-    alert("Eroare la creare cont!");
+  if (authStore.errorMessage) {
+    alert(authStore.errorMessage);
+    return;
   }
+
+  alert("Cont creat cu succes!");
+
+  email.value = "";
+  password.value = "";
 }
 </script>
 

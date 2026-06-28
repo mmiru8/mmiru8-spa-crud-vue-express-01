@@ -158,7 +158,9 @@ onMounted(() => {
     </div>
 
     <hr />
-
+  <p v-if="orders.length === 0">
+    Nu exista comenzi.
+  </p>
     <div
       v-for="order in orders"
       :key="order.id"
