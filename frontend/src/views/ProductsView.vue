@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../services/firebase";
 import { useAuthStore } from "../stores/authStore";
+import AppInfo from "../components/AppInfo.vue";
 
 const products = ref([]);
 const search = ref("");
@@ -268,7 +269,7 @@ onMounted(() => {
 <div class="page">
   
   <h1>Produse Unghii</h1>
-
+      <AppInfo />
     <input
       v-model="search"
       placeholder="Cauta produs..."
